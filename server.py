@@ -1,31 +1,38 @@
 import asyncio
 
-HOST = 'localhost'
-PORT = 9095
+# Определяем адрес и порт, на которых будет работать наш сервер
+HOST = 'localhost'  # Хост, на котором будет запущен сервер
+PORT = 9095  # Порт, на котором будет слушать сервер
 
 
+# Асинхронная функция для обработки входящих соединений
 async def handle_echo(reader, writer):
+    # Чтение данных от клиента (до 100 байт)
     data = await reader.read(100)
-    message = data.decode()
+    message = data.decode()  # Декодируем байты в строку
 
-    writer.write(data)
-    await writer.drain()
+    # Для демонстрации выводим полученное сообщение в консоль
+    print(f"Received: {message}")
 
-    writer.close()
+    # Отправка обратно то же самое сообщение (эхо)
+    writer.write(data)  # Отправляем данные обратно клиенту
+    await writer.drain()  # Дожидаемся завершения отправки
+
+    # Закрытие соединения с клиентом
+    writer.close()  # Закрываем поток записи
 
 
-loop = asyncio.get_event_loop()
-coro = asyncio.start_server(handle_echo, HOST, PORT, loop=loop)
-server = loop.run_until_complete(coro)
+# Создаем цикл событий и запускаем сервер
+async def main():
+    server = await asyncio.start_server(handle_echo, HOST, PORT)
 
-# Serve requests until Ctrl+C is pressed
-print('Serving on {}'.format(server.sockets[0].getsockname()))
-try:
-    loop.run_forever()
-except KeyboardInterrupt:
-    pass
+    # Информация о запуске сервера
+    addr = server.sockets[0].getsockname()
+    print(f'Serving on {addr}')
 
-# Close the server
-server.close()
-loop.run_until_complete(server.wait_closed())
-loop.close()
+    # Запускаем обработку входящих запросов до тех пор, пока сервер не будет остановлен
+    async with server:
+        await server.serve_forever()
+
+# Запускаем программу
+asyncio.run(main())
